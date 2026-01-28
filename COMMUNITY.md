@@ -60,19 +60,6 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for more details on the release process.
 ![](https://img.shields.io/github/contributors/DSACMS/archival-identifier?style=flat-square&label=Contributor%20Count(incl.%20bots)) 
 
 <!-- readme: contributors -start -->
-<table>
-	<tbody>
-		<tr>
-            <td align="center">
-                <a href="https://github.com/natalialuzuriaga">
-                    <img src="https://avatars.githubusercontent.com/u/29980737?v=4" width="100;" alt="natalialuzuriaga"/>
-                    <br />
-                    <sub><b>Natalia Luzuriaga</b></sub>
-                </a>
-            </td>
-		</tr>
-	<tbody>
-</table>
 <!-- readme: contributors -end -->
 
 <!--
@@ -120,3 +107,12 @@ When participating in archival-identifier open source community conversations an
 ### Acknowledgements
 
 The Community Guidelines sections were originally forked from the [United States Digital Service](https://usds.gov) [Justice40](https://thejustice40.com) open source [repository](https://github.com/usds/justice40-tool), and we would like to acknowledge and thank the community for their contributions.
+ 
+ ## Maintainers List 
+<!-- What groups/domains are maintainers a part of? Does your project have domains/areas that are maintained by specific people? List @USERNAMES directly, or any @ALIASES for groups/teams. -->
+ 
+ ## Approvers List 
+<!-- Who are the project approvers? List out @USERNAMES where possible so they can be tagged in issues/PRs directly. -->
+ 
+ ## Reviewers List 
+<!-- Who are the project reviewers? List out @USERNAMES where possible so they can be tagged in issues/PRs directly. -->
