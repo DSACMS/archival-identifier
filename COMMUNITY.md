@@ -60,6 +60,19 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for more details on the release process.
 ![](https://img.shields.io/github/contributors/DSACMS/archival-identifier?style=flat-square&label=Contributor%20Count(incl.%20bots)) 
 
 <!-- readme: contributors -start -->
+<table>
+	<tbody>
+		<tr>
+            <td align="center">
+                <a href="https://github.com/natalialuzuriaga">
+                    <img src="https://avatars.githubusercontent.com/u/29980737?v=4" width="100;" alt="natalialuzuriaga"/>
+                    <br />
+                    <sub><b>Natalia Luzuriaga</b></sub>
+                </a>
+            </td>
+		</tr>
+	<tbody>
+</table>
 <!-- readme: contributors -end -->
 
 <!--
