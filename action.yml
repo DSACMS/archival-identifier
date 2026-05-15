@@ -1,6 +1,10 @@
 name: archival-identifier
 description: A GitHub Action to identify repositories that may be candidates for archival
 
+branding:
+  icon: "sunset"
+  color: "purple"
+
 inputs:
   ORG_NAME:
     description: 'GitHub organization to analyze'

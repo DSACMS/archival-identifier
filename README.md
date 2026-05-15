@@ -1,5 +1,5 @@
 # archival-identifier 🧹🔍
-[![Release](https://img.shields.io/github/v/release/DSACMS/archival-identifier)](https://github.com/DSACMS/repo-sunsetter/releases)
+[![Release](https://img.shields.io/github/v/release/DSACMS/archival-identifier)](https://github.com/DSACMS/archival-identifier/releases)
 
 
 A GitHub Action to identify repositories that are candidates for archival based on development activity, usage, criticality score, and repository contents.
