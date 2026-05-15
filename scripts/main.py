@@ -73,34 +73,6 @@ def define_status_determination(stats):
     else:
         return "Active"
 
-def get_criticality_score(repo_url):
-    """See https://github.com/ossf/criticality_score for more details on the OpenSSF Criticality Score.
-    
-    repo_url (str): URL of the repository
-    
-    criticality_score (str): This value ranges from 0 to 1 (like a float) with lower scores indicating less critical projects.
-    """
-
-    cmd_str = f'criticality_score --repo {repo_url} --format csv'
-
-    try:
-        proc = subprocess.Popen(cmd_str, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, shell=True)
-        out, err = proc.communicate()
-        print(out.decode("utf-8"))
-        print(err)
-        
-        if not err:
-            csv_str = out.decode("utf-8")
-            items = csv_str.split(',')
-            criticality_score = items[26].rstrip()
-        else: 
-            criticality_score = None
-    except:
-        criticality_score = None
-
-    return criticality_score
-
-
 def analyze_fork_activity(repo, start_date, end_date):
     """
     Analyze the activity of forks for a given repository.
@@ -162,10 +134,14 @@ def main():
     end_date = os.getenv("END_DATE") or datetime.now().strftime("%Y-%m-%d")
     
     development_activity_file = sys.argv[1]
-    empty_repo_report_file = sys.argv[2]
+    criticality_score_file = sys.argv[2]
+    empty_repo_report_file = sys.argv[3]
 
     with open(development_activity_file, 'r') as f:
-        data = json.load(f)
+        repository_development_data = json.load(f)
+    
+    with open(criticality_score_file, 'r') as f:
+        criticality_score_data = json.load(f)
 
     with open(empty_repo_report_file, 'r') as f:
         empty_repo_data = json.load(f)
@@ -173,7 +149,7 @@ def main():
 
     stats= {}
 
-    for repo in data["repos"]:
+    for repo in repository_development_data["repos"]:
         print(f"Analyzing {repo['name']}: Development Activity")
 
         # Calculate statistics for the repository
@@ -190,7 +166,7 @@ def main():
 
         # Run OpenSSF Criticality Score
         print(f"Analyzing {repo['name']}: Criticality Score")
-        criticality_score = get_criticality_score(repo["url"])
+        criticality_score = criticality_score_data.get(repo["name"], 0)
         stats[repo["name"]]["criticality_score"] = criticality_score
 
         # Analyze fork activity

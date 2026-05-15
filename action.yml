@@ -10,11 +10,6 @@ inputs:
     description: 'Which repos to scan: all, public, or private'
     required: true
     default: 'all'
-  
-  GITHUB_ORG_TOKEN:
-    description: 'GitHub token for org access'
-    required: true
-    default: ${{ github.token }}
 
   START_DATE:
     description: 'Start date for historical data (YYYY-MM-DD) - required, e.g., 2026-01-01'
@@ -24,18 +19,31 @@ inputs:
     description: 'End date for historical data (YYYY-MM-DD) - defaults to today'
     required: false
     default: ''
+  
+  GITHUB_ORG_TOKEN:
+    description: 'GitHub token for org access'
+    required: true
+    default: ${{ github.token }}
     
 runs:
   using: 'composite'
   steps:
       
     - name: Fetch historical changelog data
+      id: fetch-changelog
       uses: DSACMS/archival-identifier/actions/fetch-changelog@main
       with:
         start_date: ${{ inputs.START_DATE }}
         end_date: ${{ inputs.END_DATE }}
         org_name: ${{ inputs.ORG_NAME }}
         github_token: ${{ inputs.GITHUB_ORG_TOKEN }}
+    
+    - name: Calculate criticality scores for all repos
+      id: calculate-criticality
+      uses: DSACMS/archival-identifier/actions/calculate-criticality-scores@main
+      with:
+        ORG_NAME: ${{ inputs.ORG_NAME }}
+        GITHUB_TOKEN: ${{ inputs.GITHUB_ORG_TOKEN }}
 
     - name: Scan for empty and readme-only repositories
       id: scan-empty-repos
@@ -64,7 +72,7 @@ runs:
         END_DATE: ${{ inputs.END_DATE }}
         GITHUB_AUTH_TOKEN: ${{ inputs.GITHUB_ORG_TOKEN }}
       run: |
-        python ${{ github.action_path }}/scripts/main.py data.json empty-repo-report.json
+        python ${{ github.action_path }}/scripts/main.py data.json criticality-score-results.json empty-repo-report.json
 
     - name: Create issue with archival-identifier results on the repository
       uses: JasonEtco/create-an-issue@v2
@@ -78,5 +86,6 @@ runs:
       if: always()
       run: |
         rm -f data.json
-        rm -rf _super_changelog_src/ 
+        rm -rf _super_changelog_src/
+        rm -f criticality-score-results.json
         rm -f empty-repo-report.json
