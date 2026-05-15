@@ -1,26 +1,41 @@
-# archival-identifier
+# archival-identifier 🧹🔍
 
-A script to identify repositories for archival
+A GitHub Action to identify repositories that are candidates for archival based on development activity, usage, criticality score, and repository contents.
 
 ## About the Project
+archival-identifier is a GitHub Action that scans a GitHub organization to identify repositories that are suitable candidates for archival. It uses 4 types of repository data/metrics groups as indicators for project health to determine whether a repository should be archived:
 
-**{project statement}**
+1. Development Activity Metrics
+_Assessing repository activity based on how recently key actions occurred within certain period of time_
 
-<!---
-### Project Vision
-**{project vision}** -->
+Metrics: Open issues, closed issues, open pull requests, merged/closed pull requests, releases, commits
 
-<!--
-### Project Mission
-**{project mission}** -->
+2. Reuse via forks
+_Analyzing forks and its activity helps us understand how often the project is being used by its downstream use and developer community_
 
-<!--
-### Agency Mission
-TODO: Good to include since this is an agency-led project -->
+Metrics: Number of forks, active forks
 
-<!--
-### Team Mission
-TODO: Good to include since this is an agency-led project -->
+3. [OpenSSF Criticality Score](https://github.com/ossf/criticality_score)
+_Developed by OpenSSF, criticality score represents the influence and importance of a project. Score is between 0 (least critical) to 1 (most critical)_
+
+Metrics: Criticality Score
+
+4. Repository contents
+_Repositories that are empty and only contain a README with no plans for future development are suitable candidates for archival_
+
+Metrics: Empty, README-only, Has Content
+
+_To learn more on the specific metrics we use, visit the [How it Works section](#how-it-works)._
+
+After fetching and calculating the data above, the action posts an issue to the repository containing the results along with a status determination for each repository. [Criteria for determination](https://dsacms.github.io/ospo-guide/outbound/archiving-repositories/#criteria-for-determination) can be found in the our [archiving repositories guide](https://dsacms.github.io/ospo-guide/outbound/archiving-repositories/).
+
+The status determinations supported at this time are:
+| Status | Description | Open PRs  | Merged/ Closed PRs | Push to repo | Push to forks | Open issues | Closed issues | Criticality Score | Is repo empty/ README only? | 
+| :---- | :---- | :---- | :---- | :---- | :---- | :---- | :---- | :---- | :---- |
+| Active | This project is under active development and has an active user base | ✅  | ✅ | ✅ | ✅ | ✅ | ✅ | Above $THRESHOLD \_SCORE | Has content |
+| Dormant | Project upstream and downstreams are inactive | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ | ❌ Below $THRESHOLD \_SCORE | Empty OR README-only |
+
+This project is developed by the CMS.gov Open Source Program Office, based on our [archiving repositories guide](https://dsacms.github.io/ospo-guide/outbound/archiving-repositories/) and the [CHAOSS Practitioner Guide for Sunsetting Open Source Projects](https://chaoss.community/practitioner-guide-sunset/).
 
 ### Usage
 Create a new GitHub workflow file (e.g., `.github/workflows/archival-identifier.yml`) or add the following to an existing GitHub Actions workflow:
@@ -42,6 +57,15 @@ on:
       org_name:
         description: 'GitHub organization name'
         required: true
+      visibility:
+        description: 'Which repos to scan: all, public, or private'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - public
+          - private
 
 permissions:
   contents: write
@@ -60,18 +84,87 @@ jobs:
         id: archive
         uses: DSACMS/archival-identifier@main
         with:
+          ORG_NAME: ${{ inputs.org_name }}
+          VISIBILITY: ${{ inputs.visibility }}
           START_DATE: ${{ inputs.start_date }}
           END_DATE: ${{ inputs.end_date }}
-          ORG_NAME: ${{ inputs.org_name }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ORG_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
+
+### How it works
+
+#### Activity Development Metrics
+The action uses [super-changelog](https://www.github.com/DSACMS/super-changelog) to fetch development activity metrics on all repositories within a defined timeframe. It returns the following data: open/closed issues, open/merged/closed pull requests, releases, and commits.
+
+This functionality is written as a [subaction](./actions/fetch-changelog/action.yml) located in [actions/fetch-changelog](./actions/fetch-changelog) directory.
+
+This functionality is located in the actions directory: actions/fetch-superchangelog
+
+> ![IMPORTANT]
+> Note: These metrics are intended to capture development activity performed by human developers. Automated tools such
+as GitHub Actions bot and Dependabot are excluded, since their activity reflects scheduled/triggered automated updates rather than active human development.
+
+#### Reuse via Forks
+This action assesses repository reuse by analyzing fork data fetched from the Github API via PyGitHub:
+* Number of forks
+  * How many forks have been created?
+* Number of **active** forks
+  * Have technical commits been pushed to the forks within $THRESHOLD time? Have the forks diverged from the upstream?
+
+This functionality is located in [main.py](./scripts/main.py) in the scripts directory.
+
+#### OpenSSF Criticality Score
+The action uses the [OpenSSF criticality_score Go library](https://github.com/ossf/criticality_score) to calculate criticality score for each repository. This functionality is written as a [subaction](./actions/calculate-criticality-scores/action.yml) located in the [actions/calculate-criticality-scores](./actions/calculate-criticality-scores) directory.
+
+#### Repository Contents
+The action uses the empty-repos GitHub Action to scan for repositories that are empty and README-only. This functionality is written as a [subaction](./actions/calculate-criticality-scores/action.yml) located in the [actions/scan-empty-repos](./actions/scan-empty-repos) directory.
+
 ### Inputs
-| Input | Required | Description |
-| :---- |:---------|:------------|
-| `start_date` | Yes | 'Start date for historical data (YYYY-MM-DD) - required, e.g., 2026-01-01' |
-| `end_date` | No | End of date range defaults to today if omitted |
-| `org_name` | Yes | Name of GitHub organization to scan|
-| `GITHUB_TOKEN` | Yes | Automatically provided by GitHub Actions - no setup needed |
+| Input | Required | Description | Type | Default |
+| :---- |:---------|:------------|:------------|:------------|
+| `ORG_NAME` | Yes | Name of GitHub organization to scan | string | N/A |
+| `VISIBILITY` | Yes | Which repos to scan: all, public, or private | choice | all |
+| `START_DATE` | Yes | Start date for historical data | date in format (YYYY-MM-DD) e.g., 2026-01-01' | N/A |
+| `END_DATE` | No | End of date range | date in format (YYYY-MM-DD) | Today |
+
+#### Token
+
+A `GITHUB_TOKEN` is needed for this action for writing issues and reading contents + pull requests. The built-in GITHUB_TOKEN provided by the workflow is sufficient to run the action! Set it as the permissions below:
+
+```
+permissions:
+  contents: read
+  pull-requests: read
+  issues: write
+```
+⚠️ Please make sure the following are enabled within your Repository Action Settings in order to work properly ⚠️
+![GitHub Workflow Permissions Setting](./assets/workflow_permissions_setting.png)
+
+
+### Outputs
+
+The action outputs an issue report with the results. Example below:
+
+##### Results: 2026-05-01 to 2026-05-15
+| Repository | Open Issues | Closed Issues | Open PRs | Merged PRs | Closed PRs | Releases | Commits | Criticality Score | Forks | Active Forks | Is Empty/README-Only | Status |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| repository-1 | 1 | 1 | 5 | 3 | 2 | 0 | 14 | 0.14156 | 1 | 0 | Has Content | Active |
+| repository-2 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0.14268 | 0 | 0 | Has Content | Dormant |
+| repository-3 | 0 | 0 | 0 | 0 | 0 | 0 | 5 | 0.13958 | 0 | 0 | README-only | Dormant |
+| repository-4 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0.20336 | 0 | 0 | Empty | Dormant |
+
+
+### Project Vision
+To simplify software inventory management by automating the identification of repositories that are candidates for archival.
+
+### Project Mission
+To provide teams with a clear, data-driven view of their repository health of their software inventory so they can make informed decisions about maintenance and sunsetting.
+
+### Agency Mission
+This project supports the agency's broader source code stewardship initiative, focused on bringing all repositories up to open source and repository hygiene standards.
+
+### Team Mission
+Our team is committed to building tools that make open source development complemented with repository hygiene easier for federal development teams, focusing on automation and accuracy to reduce manual overhead.
 
 ## Core Team
 
@@ -79,18 +172,22 @@ A list of core team members responsible for the code and documentation in this r
 
 ## Repository Structure
 
-<!-- TODO: Including the repository structure helps viewers quickly understand the project layout. Using the "tree -d" command can be a helpful way to generate this information, but, be sure to update it as the project evolves and changes over time. -->
-
 ```plaintext
 .
+├── actions
+│   ├── calculate-criticality-scores/ # Calculates criticality score for repos
+│   ├── fetch-changelog/              # Fetches development activity for repos in an org within a defined timeframe
+│   └── scan-empty-repos/             # Scans for empty and README-only repos
+└── scripts                          
+    └── main.py                       # Script that assess reuse and publishes issue report with results
 ```
 
-
-**{list directories and descriptions}**
-
-<!-- TODO: Add a 'table of contents" for your documentation. Tier 0/1 projects with simple README.md files without many sections may or may not need this, but it is still extremely helpful to provide "bookmark" or "anchor" links to specific sections of your file to be referenced in tickets, docs, or other communication channels. -->
-
-**{list of .md at top directory and descriptions}**
+*Documentation Index*
+- [CONTRIBUTING.md](./CONTRIBUTING.md) - Guidelines for contributing to the project
+- [COMMUNITY.md](./COMMUNITY.md) & [CODEOWNERS.md](./.github/CODEOWNERS.md) - Core team information and guidelines for community participation
+- [GOVERNANCE.md](./GOVERNANCE.md) - Project governance information
+- [SECURITY.md](./SECURITY.md) - Security and vulnerability disclosure policies
+- [LICENSE](./LICENSE) - CC0 1.0 Universal public domain dedication
 
 # Development and Software Delivery Lifecycle
 
@@ -98,19 +195,20 @@ The following guide is for members of the project team who have access to the re
 
 ## Local Development
 
-<!--- TODO - with example below:
-This project is monorepo with several apps. Please see the [api](./api/README.md) and [frontend](./frontend/README.md) READMEs for information on spinning up those projects locally. Also see the project [documentation](./documentation) for more info.
--->
+Since this project consists of shell scripts and GitHub Actions, there is no build process. To test changes:
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes to the shell scripts or action definitions
+4. Test by referencing your fork in a workflow: uses: your-fork/repo-sunsetter@your-branch
+
 
 ## Coding Style and Linters
 
-<!-- TODO - Add the repo's linting and code style guidelines -->
-
-Each application has its own linting and testing guidelines. Lint and code tests are run on each commit, so linters and tests should be run locally before committing.
+TBD
 
 ## Branching Model
 
-<!--- TODO - with example below:
 This project follows [trunk-based development](https://trunkbaseddevelopment.com/), which means:
 
 * Make small changes in [short-lived feature branches](https://trunkbaseddevelopment.com/short-lived-feature-branches/) and merge to `main` frequently.
@@ -122,7 +220,6 @@ This project follows [trunk-based development](https://trunkbaseddevelopment.com
 This project uses **continuous deployment** using [Github Actions](https://github.com/features/actions) which is configured in the [./github/workflows](.github/workflows) directory.
 
 Pull-requests are merged to `main` and the changes are immediately deployed to the development environment. Releases are created to push changes to production.
--->
 
 ## Contributing
 

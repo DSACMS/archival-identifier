@@ -15,22 +15,26 @@ Look for issues labeled `good-first-issue` for good opportunities to contribute.
 
 ### Team Specific Guidelines
 
-- Please try to keep pull requests to a reasonable size; try to split large contributions to multiple PRs
-- Document and explain the contribution clearly according to provided standards when possible.
-- Feel free to reach out to us if there is any confusion. A list of the project maintainers is found here: [COMMUNITY.md](./COMMUNITY.md)
+We don’t accept PRs that:
+
+- Don’t directly address an existing issue
+- Touch more than 5 files at a time and contain more than 20 commits
+- Are untested / don’t pass our test suite / don’t pass our linters / don’t follow styleguide
+- Are entirely AI generated
+
+We accept feedback in the form of issues for the following: bug reports, feature requests
+
+Feel free to reach out to us if there is any confusion. A list of the project maintainers is found here: [COMMUNITY.md](./COMMUNITY.md)
 
 ### Building dependencies
 
 The project uses the following dependencies:
 - [super-changelog](https://github.com/DSACMS/super-changelog)
-- [OpenSSF Criticality Score Python Library v1.0.7](https://github.com/ossf/criticality_score/releases/tag/v1.0.7)
+- [OpenSSF Criticality Score Go Library](https://github.com/ossf/criticality_score/releases/tag/v2.0.4)
 - [empty-repos](https://github.com/github/empty-repos) GitHub Action
 
 To build the dependencies listed in [requirements.txt](./requirements.txt) for `main.py`, run
 `pip install -r requirements.txt`.
-
-> [!IMPORTANT]  
-> criticality-score v1.0.7 and PyGitHub 1.54.0 are pinned for compatibility between the two libraries. We are currently using a deprecated version of the criticality score library, which uses an older version of PyGitHub. We plan to upgrade and use the latest version of the criticality-score library soon.
 
 The GitHub CLI can be used to run and test the action locally.
 
