@@ -1,0 +1,72 @@
+{
+  "name": "archival-identifier",
+  "version": "",
+  "description": "A GitHub Action to identify repositories for archival",
+  "longDescription": "",
+  "permissions": {
+    "licenses": [
+      {
+        "name": "CC0-1.0",
+        "URL": ""
+      }
+    ],
+    "usageType": [],
+    "exemptionText": ""
+  },
+  "organization": "Centers for Medicare & Medicaid Services",
+  "repositoryURL": "https://github.com/DSACMS/archival-identifier",
+  "repositoryVisibility": "public",
+  "homepageURL": "",
+  "downloadURL": "",
+  "disclaimerURL": "",
+  "disclaimerText": "",
+  "vcs": "git",
+  "laborHours": 3241,
+  "reuseFrequency": {
+    "forks": 4,
+    "clones": 0
+  },
+  "platforms": [],
+  "categories": [],
+  "languages": [
+    "Python",
+    "JavaScript"
+  ],
+  "contractNumber": [],
+  "SBOM": "https://github.com/DSACMS/archival-identifier/network/dependencies",
+  "relatedCode": [],
+  "reusedCode": [],
+  "partners": [],
+  "date": {
+    "created": "2026-01-28T17:57:29Z",
+    "lastModified": "2026-05-15T21:52:52Z",
+    "metadataLastUpdated": "2026-05-15T21:56:51.383Z"
+  },
+  "tags": [
+    "archive",
+    "archive-candidate",
+    "dsacms-tier3",
+    "end-of-life",
+    "eol",
+    "featured",
+    "github-actions",
+    "organization-management",
+    "ospos",
+    "stale-repo",
+    "sunset"
+  ],
+  "contact": {
+    "email": "",
+    "name": ""
+  },
+  "feedbackMechanism": "https://github.com/DSACMS/archival-identifier/issues",
+  "AIUseCaseID": "0",
+  "localisation": false,
+  "userInput": false,
+  "group": "",
+  "projects": [],
+  "systems": [],
+  "subsetInHealthcare": [],
+  "userType": [],
+  "maturityModelTier": 0
+}
