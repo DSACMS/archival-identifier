@@ -15,7 +15,7 @@ _Analyzing forks and its activity helps us understand how often the project is b
 
 Metrics: Number of forks, active forks
 
-3. OpenSSF Criticality Score
+3. [OpenSSF Criticality Score](https://github.com/ossf/criticality_score)
 _Developed by OpenSSF, criticality score represents the influence and importance of a project. Score is between 0 (least critical) to 1 (most critical)_
 
 Metrics: Criticality Score
@@ -57,6 +57,15 @@ on:
       org_name:
         description: 'GitHub organization name'
         required: true
+      visibility:
+        description: 'Which repos to scan: all, public, or private'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - public
+          - private
 
 permissions:
   contents: write
@@ -75,10 +84,11 @@ jobs:
         id: archive
         uses: DSACMS/archival-identifier@main
         with:
+          ORG_NAME: ${{ inputs.org_name }}
+          VISIBILITY: ${{ inputs.visibility }}
           START_DATE: ${{ inputs.start_date }}
           END_DATE: ${{ inputs.end_date }}
-          ORG_NAME: ${{ inputs.org_name }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_ORG_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 ```
 
 ### How it works
@@ -86,7 +96,7 @@ jobs:
 #### Activity Development Metrics
 The action uses [super-changelog](https://www.github.com/DSACMS/super-changelog) to fetch development activity metrics on all repositories within a defined timeframe. It returns the following data: open/closed issues, open/merged/closed pull requests, releases, and commits.
 
-This functionality is written as a [subaction](./actions/fetch-changelog/action.yml) located in the [actions/fetch-changelog](./actions/fetch-changelog) directory.
+This functionality is written as a [subaction](./actions/fetch-changelog/action.yml) located in [actions/fetch-changelog](./actions/fetch-changelog) directory.
 
 This functionality is located in the actions directory: actions/fetch-superchangelog
 
@@ -110,17 +120,31 @@ The action uses the [OpenSSF criticality_score Go library](https://github.com/os
 The action uses the empty-repos GitHub Action to scan for repositories that are empty and README-only. This functionality is written as a [subaction](./actions/calculate-criticality-scores/action.yml) located in the [actions/scan-empty-repos](./actions/scan-empty-repos) directory.
 
 ### Inputs
-| Input | Required | Description |
-| :---- |:---------|:------------|
-| `start_date` | Yes | 'Start date for historical data (YYYY-MM-DD) - required, e.g., 2026-01-01' |
-| `end_date` | No | End of date range defaults to today if omitted |
-| `org_name` | Yes | Name of GitHub organization to scan|
-| `GITHUB_TOKEN` | Yes | Automatically provided by GitHub Actions - no setup needed |
+| Input | Required | Description | Type | Default |
+| :---- |:---------|:------------|:------------|:------------|
+| `ORG_NAME` | Yes | Name of GitHub organization to scan | string | N/A |
+| `VISIBILITY` | Yes | Which repos to scan: all, public, or private | choice | all |
+| `START_DATE` | Yes | Start date for historical data | date in format (YYYY-MM-DD) e.g., 2026-01-01' | N/A |
+| `END_DATE` | No | End of date range | date in format (YYYY-MM-DD) | Today |
+
+#### Token
+
+A `GITHUB_TOKEN` is needed for this action for writing issues and reading contents + pull requests. The built-in GITHUB_TOKEN provided by the workflow is sufficient to run the action! Set it as the permissions below:
+
+```
+permissions:
+  contents: read
+  pull-requests: read
+  issues: write
+```
+⚠️ Please make sure the following are enabled within your Repository Action Settings in order to work properly ⚠️
+![GitHub Workflow Permissions Setting](./assets/workflow_permissions_setting.png)
+
 
 ### Outputs
 
 The action outputs an issue report with the results. Example below:
-```
+
 ##### Results: 2026-05-01 to 2026-05-15
 | Repository | Open Issues | Closed Issues | Open PRs | Merged PRs | Closed PRs | Releases | Commits | Criticality Score | Forks | Active Forks | Is Empty/README-Only | Status |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|
@@ -128,7 +152,7 @@ The action outputs an issue report with the results. Example below:
 | repository-2 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0.14268 | 0 | 0 | Has Content | Dormant |
 | repository-3 | 0 | 0 | 0 | 0 | 0 | 0 | 5 | 0.13958 | 0 | 0 | README-only | Dormant |
 | repository-4 | 0 | 0 | 0 | 0 | 0 | 0 | 0 | 0.20336 | 0 | 0 | Empty | Dormant |
-```
+
 
 ### Project Vision
 To simplify software inventory management by automating the identification of repositories that are candidates for archival.
