@@ -1,5 +1,5 @@
 name: archival-identifier
-description: A GitHub Action to identify repositories that may be candidates for archival based on inactivity, usage, repository contents, and criticality score
+description: A GitHub Action to identify repositories that may be candidates for archival
 
 inputs:
   ORG_NAME:
