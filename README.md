@@ -100,9 +100,7 @@ The action uses [super-changelog](https://www.github.com/DSACMS/super-changelog)
 
 This functionality is written as a [subaction](./actions/fetch-changelog/action.yml) located in [actions/fetch-changelog](./actions/fetch-changelog) directory.
 
-This functionality is located in the actions directory: actions/fetch-superchangelog
-
-> ![IMPORTANT]
+> [!IMPORTANT]
 > Note: These metrics are intended to capture development activity performed by human developers. Automated tools such
 as GitHub Actions bot and Dependabot are excluded, since their activity reflects scheduled/triggered automated updates rather than active human development.
 

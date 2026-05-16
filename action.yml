@@ -1,5 +1,5 @@
 name: archival-identifier
-description: A GitHub Action to identify repositories that may be candidates for archival
+description: A GitHub Action to identify repositories that are candidates for archival
 
 branding:
   icon: "sunset"
