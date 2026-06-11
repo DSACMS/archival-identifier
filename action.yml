@@ -24,6 +24,11 @@ inputs:
     required: false
     default: ''
   
+  CRITICALITY_SCORE_THRESHOLD:
+    description: 'Threshold for criticality score to consider a repo a candidate for archival (0-1)'
+    required: false
+    default: 2.5
+  
   GITHUB_ORG_TOKEN:
     description: 'GitHub token for org access'
     required: true
@@ -74,6 +79,7 @@ runs:
         ORG_NAME: ${{ inputs.ORG_NAME }}
         START_DATE: ${{ inputs.START_DATE }}
         END_DATE: ${{ inputs.END_DATE }}
+        CRITICALITY_SCORE_THRESHOLD: ${{ inputs.CRITICALITY_SCORE_THRESHOLD }}
         GITHUB_AUTH_TOKEN: ${{ inputs.GITHUB_ORG_TOKEN }}
       run: |
         python ${{ github.action_path }}/scripts/main.py data.json criticality-score-results.json empty-repo-report.json

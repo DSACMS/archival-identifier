@@ -55,11 +55,14 @@ def define_status_determination(stats):
         
     str: The determined status of the repository (e.g., "Active", "Dormant")
     """
-    # Placeholder logic for status determination
+    criticality_score_threshold = float(os.getenv("CRITICALITY_SCORE_THRESHOLD", 2.5))
+
+    # Logic for status determination
     if stats.get("archived", True):
         return "Archived"
-
-    if all(stats.get(field, 0) == 0 for field in [
+    
+    # Repository is low criticality and has low activity across all metrics, classify as Dormant
+    if stats.get("criticality_score", 0) <= criticality_score_threshold and all(stats.get(field, 0) < 3 for field in [
         "issues_open_count",
         "issues_closed_count",
         "pr_open_count",
@@ -70,8 +73,8 @@ def define_status_determination(stats):
         "active_forks_count"
     ]):
         return "Dormant"
-    else:
-        return "Active"
+    
+    return "Active"
 
 def analyze_fork_activity(repo, start_date, end_date):
     """
