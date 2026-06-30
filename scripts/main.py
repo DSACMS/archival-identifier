@@ -88,12 +88,12 @@ def define_status_determination(stats, months_in_range=1):
     if stats.get("release_count", 0) > 0:
         return "Active"
     
-    # Repository shipped <2 commits per month, classify as Dormant
+    # Repository shipped >2 user/non-bot commits per month, classify as Active
     commits_threshold = months_in_range
     print("COMMIT_COUNT: ", stats.get("commit_count", 0))
     print("MONTHS_IN_RANGE: ", months_in_range)
-    if stats.get("commit_count", 0) < commits_threshold:
-        return "Dormant"
+    if stats.get("commit_count", 0) > commits_threshold:
+        return "Active"
 
     # Repository is low criticality and has low activity across key metrics, classify as Dormant
     activity_fields = [
