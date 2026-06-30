@@ -182,13 +182,14 @@ def main():
 
     with open(development_activity_file, 'r') as f:
         repository_development_data = json.load(f)
+    print(repository_development_data)
     
     with open(criticality_score_file, 'r') as f:
         criticality_score_data = json.load(f)
 
     with open(empty_repo_report_file, 'r') as f:
         empty_repo_data = json.load(f)
-    print (empty_repo_data)
+    print(empty_repo_data)
 
     stats= {}
 
