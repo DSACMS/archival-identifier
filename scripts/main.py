@@ -90,6 +90,8 @@ def define_status_determination(stats, months_in_range=1):
     
     # Repository shipped <2 commits per month, classify as Dormant
     commits_threshold = months_in_range
+    print("COMMIT_COUNT: ", stats.get("commit_count", 0))
+    print("MONTHS_IN_RANGE: ", months_in_range)
     if stats.get("commit_count", 0) < commits_threshold:
         return "Dormant"
 
