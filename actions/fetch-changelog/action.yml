@@ -75,7 +75,7 @@ runs:
       run: |
         # cd into super-changelog/scripts so that it can access utils.py
         cd _super_changelog_src/scripts
-        python generate_changelog_archival.py
+        python -u generate_changelog_archival.py
 
     - name: Rename output to data.json
       id: rename
