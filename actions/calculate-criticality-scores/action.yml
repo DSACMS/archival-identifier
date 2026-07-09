@@ -44,6 +44,8 @@ runs:
           score=$(echo "$score_obj" | jq '.default_score | tonumber')
           repo_entry=$(jq -n --arg key "$repo_name" --argjson value "$score" '{($key): $value}')
           results=$(echo "$results $repo_entry" | jq -s 'add')
+          echo "Pausing for 3 seconds..."
+          sleep 3
         done
         echo "$results"
 

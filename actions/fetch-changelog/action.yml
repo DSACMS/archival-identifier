@@ -1,5 +1,5 @@
 name: fetch-changelog
-description: Checks out super-changelog, runs the generate-changelog-historical.py script, and writes data.json
+description: Checks out super-changelog, runs the generate-changelog-archival.py script, and writes data.json
 
 inputs:
   start_date:
@@ -65,7 +65,7 @@ runs:
       run: |
         pip install PyGithub
 
-    - name: Run generate-changelog-historical.py to create data.json
+    - name: Run generate-changelog-archival.py to create data.json
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.github_token }}
@@ -75,7 +75,7 @@ runs:
       run: |
         # cd into super-changelog/scripts so that it can access utils.py
         cd _super_changelog_src/scripts
-        python generate_changelog_historical.py
+        python generate_changelog_archival.py
 
     - name: Rename output to data.json
       id: rename
@@ -83,7 +83,7 @@ runs:
       run: |
         START_DATE="${{ steps.dates.outputs.start_date }}"
         END_DATE="${{ steps.dates.outputs.end_date }}"
-        SRC="_super_changelog_src/scripts/changelog_data/data/historical_changelog_${START_DATE}_to_${END_DATE}.json"
+        SRC="_super_changelog_src/scripts/changelog_data/data/archival_changelog_${START_DATE}_to_${END_DATE}.json"
 
         if [ ! -f "$SRC" ]; then
           echo "Error: Expected output file not found at $SRC"
