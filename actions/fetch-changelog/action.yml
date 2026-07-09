@@ -56,7 +56,7 @@ runs:
       uses: actions/checkout@v4
       with:
         repository: DSACMS/super-changelog
-        ref: main
+        ref: DSACMS/zion/rate-limiting
         path: _super_changelog_src
         token: ${{ inputs.github_token }}
 
