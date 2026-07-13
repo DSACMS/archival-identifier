@@ -27,7 +27,7 @@ inputs:
   CRITICALITY_SCORE_THRESHOLD:
     description: 'Threshold for criticality score to consider a repo a candidate for archival (0-1)'
     required: false
-    default: 2.5
+    default: 0.2
   
   GITHUB_ORG_TOKEN:
     description: 'GitHub token for org access'
@@ -40,7 +40,7 @@ runs:
       
     - name: Fetch historical changelog data
       id: fetch-changelog
-      uses: DSACMS/archival-identifier/actions/fetch-changelog@DSACMS/zion/rate-limiting
+      uses: DSACMS/archival-identifier/actions/fetch-changelog@main
       with:
         start_date: ${{ inputs.START_DATE }}
         end_date: ${{ inputs.END_DATE }}
@@ -49,7 +49,7 @@ runs:
     
     - name: Calculate criticality scores for all repos
       id: calculate-criticality
-      uses: DSACMS/archival-identifier/actions/calculate-criticality-scores@DSACMS/zion/rate-limiting
+      uses: DSACMS/archival-identifier/actions/calculate-criticality-scores@main
       with:
         ORG_NAME: ${{ inputs.ORG_NAME }}
         GITHUB_TOKEN: ${{ inputs.GITHUB_ORG_TOKEN }}
