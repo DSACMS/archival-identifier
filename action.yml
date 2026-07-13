@@ -27,7 +27,7 @@ inputs:
   CRITICALITY_SCORE_THRESHOLD:
     description: 'Threshold for criticality score to consider a repo a candidate for archival (0-1)'
     required: false
-    default: 0.2
+    default: 2.5
   
   GITHUB_ORG_TOKEN:
     description: 'GitHub token for org access'
