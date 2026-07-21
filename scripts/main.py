@@ -47,31 +47,73 @@ def write_markdown_file(markdown_content, output_path="archival_candidates_repor
         f.write(markdown_content)
     print(f"Markdown report written to {output_path}")
 
-def define_status_determination(stats):
+def calculate_months_in_range(start_date, end_date):
+    """
+    Calculate the number of calendar months covered by a date range.
+
+    Args:
+        start_date (str): Start date in YYYY-MM-DD format
+        end_date (str): End date in YYYY-MM-DD format
+
+    Returns:
+        int: Number of months in range (inclusive of start and end months)
+    """
+    start = datetime.strptime(start_date, "%Y-%m-%d")
+    end = datetime.strptime(end_date, "%Y-%m-%d")
+
+    if end < start:
+        raise ValueError("END_DATE must be on or after START_DATE")
+
+    return (end.year - start.year) * 12 + (end.month - start.month) + 1
+
+def define_status_determination(stats, months_in_range=1):
     """
     Determine the status of a repository based on its statistics.
     
     stats (dict): A dictionary containing development activity statistics for a repository
         
-    str: The determined status of the repository (e.g., "Active", "Dormant")
+    str: The determined status of the repository (e.g., "Active", "Dormant", "Archived")
     """
-    # Placeholder logic for status determination
+    criticality_score_threshold = float(os.getenv("CRITICALITY_SCORE_THRESHOLD", 2.5))
+
+    # Logic for status determination
     if stats.get("archived", True):
         return "Archived"
+    
+    # Repository has no content (empty or README-only), classify as Dormant
+    if stats.get("is_empty_or_readme_only") in ["Empty", "README-only"]:
+        return "Dormant"
+    
+    # Repository shipped releases, classify as Active
+    if stats.get("release_count", 0) > 0:
+        return "Active"
+    
+    # Repository shipped >2 user/non-bot commits per month, classify as Active
+    commits_threshold = months_in_range
+    print("COMMIT_COUNT: ", stats.get("commit_count", 0))
+    print("MONTHS_IN_RANGE: ", months_in_range)
+    if stats.get("commit_count", 0) > commits_threshold:
+        return "Active"
 
-    if all(stats.get(field, 0) == 0 for field in [
+    # Repository is low criticality and has low activity across key metrics, classify as Dormant
+    activity_fields = [
         "issues_open_count",
         "issues_closed_count",
         "pr_open_count",
         "pr_merged_count",
         "pr_closed_count",
-        "release_count",
-        "commit_count",
-        "active_forks_count"
-    ]):
+    ]
+    # Check if all activity fields are below 3, indicating low activity
+    issue_pr_check = all(stats.get(field, 0) < 3 for field in activity_fields)
+
+    # Count how many activity fields have a value of 0, indicating no activity in those areas
+    zero_value_count = sum(1 for field in activity_fields if stats.get(field, 0) == 0)
+    zero_count_check = zero_value_count >= 3
+
+    if stats.get("criticality_score", 0) <= criticality_score_threshold and (issue_pr_check or zero_count_check):
         return "Dormant"
-    else:
-        return "Active"
+    
+    return "Active"
 
 def analyze_fork_activity(repo, start_date, end_date):
     """
@@ -132,6 +174,7 @@ def main():
     org_name = os.getenv("ORG_NAME")
     start_date = os.getenv("START_DATE")
     end_date = os.getenv("END_DATE") or datetime.now().strftime("%Y-%m-%d")
+    months_in_range = calculate_months_in_range(start_date, end_date)
     
     development_activity_file = sys.argv[1]
     criticality_score_file = sys.argv[2]
@@ -139,13 +182,14 @@ def main():
 
     with open(development_activity_file, 'r') as f:
         repository_development_data = json.load(f)
+    print(repository_development_data)
     
     with open(criticality_score_file, 'r') as f:
         criticality_score_data = json.load(f)
 
     with open(empty_repo_report_file, 'r') as f:
         empty_repo_data = json.load(f)
-    print (empty_repo_data)
+    print(empty_repo_data)
 
     stats= {}
 
@@ -186,7 +230,7 @@ def main():
             stats[repo["name"]]["is_empty_or_readme_only"] = "Has Content"
 
         # Determine the status of the repository
-        stats[repo["name"]]["status"] = define_status_determination(stats[repo["name"]])
+        stats[repo["name"]]["status"] = define_status_determination(stats[repo["name"]], months_in_range)
 
     # Generate and write markdown file
     markdown_content = generate_markdown_table(stats, org_name, start_date, end_date)
