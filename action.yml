@@ -49,7 +49,7 @@ runs:
     
     - name: Calculate criticality scores for all repos
       id: calculate-criticality
-      uses: DSACMS/archival-identifier/actions/calculate-criticality-scores@main
+      uses: DSACMS/archival-identifier/actions/calculate-criticality-scores@DSACMS/zion/rate-limiting
       with:
         ORG_NAME: ${{ inputs.ORG_NAME }}
         GITHUB_TOKEN: ${{ inputs.GITHUB_ORG_TOKEN }}
