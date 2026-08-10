@@ -44,7 +44,7 @@ runs:
          
           attempt=1
           max_attempts=4
-          backoff=30   # seconds, doubles each retry: 30, 60, 120, 240
+          backoff=60    # seconds, doubles each retry: 60, 120, 240, 480
           score_obj=""
           success=false
          
