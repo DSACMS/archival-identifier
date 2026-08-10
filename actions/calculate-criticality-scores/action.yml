@@ -76,8 +76,8 @@ runs:
           fi
          
           # Base pause between repos
-          echo "Pausing 15 seconds before next repo..."
-          sleep 15
+          echo "Pausing 3 seconds before next repo..."
+          sleep 3
         done
          
         echo "$results" > criticality-score-results.json
