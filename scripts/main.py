@@ -75,6 +75,38 @@ def define_status_determination(stats, months_in_range=1):
     str: The determined status of the repository (e.g., "Active", "Dormant", "Archived")
     """
     criticality_score_threshold = float(os.getenv("CRITICALITY_SCORE_THRESHOLD", 2.5))
+    
+    if stats.get("archived", True):
+        return "Archived"
+    
+     # Repository has no content (empty or README-only), classify as Dormant
+    if stats.get("is_empty_or_readme_only") in ["Empty", "README-only"]:
+        return "Dormant"
+    
+     # Repository shipped releases, classify as Active
+    if stats.get("release_count", 0) > 0:
+        return "Active"
+    
+    activity_fields = [
+        "issues_open_count",
+        "issues_closed_count",
+        "pr_open_count",
+        "pr_merged_count",
+        "pr_closed_count",
+        "commit_count"
+    ]
+
+    meets_threshold = stats.get("criticality_score", 0) > criticality_score_threshold
+    
+    contents = stats.get("is_empty_or_readme_only")
+    
+    if all(stats.get(field, 0) > 0 for field in activity_fields) and meets_threshold and contents == "Has Content":
+        return "Active"
+        
+    if stats.get("issues_open_count", 0) > 0
+    
+    #---------------------------------------------------------------------------------
+    criticality_score_threshold = float(os.getenv("CRITICALITY_SCORE_THRESHOLD", 2.5))
 
     # Logic for status determination
     if stats.get("archived", True):
@@ -137,6 +169,9 @@ def analyze_fork_activity(repo, start_date, end_date):
     forks_count = len(forks)
     print( f"{repo} has {forks_count} forks.")
     active_forks = []
+    
+    parent_commits = repo_obj.get_commits(since=start_date, until=end_date) # TODO: Use commits data from data.json
+    parent_commit_shas = { commit.sha for commit in parent_commits }
 
     for fork in forks:
         print(f"Analyzing fork: {fork.full_name}...")
@@ -147,9 +182,6 @@ def analyze_fork_activity(repo, start_date, end_date):
             # Retrieves commits from the reporting period
             fork_commits = fork.get_commits(since=start_date, until=end_date)
             fork_commit_shas = { commit.sha for commit in fork_commits }
-            parent_commits = repo_obj.get_commits(since=start_date, until=end_date) # TODO: Use commits data from data.json
-            parent_commit_shas = { commit.sha for commit in parent_commits }
-
             # Uses the set difference to determine if there are unique commits in the fork that are not in the parent repository
             unique_fork_commits = fork_commit_shas.difference(parent_commit_shas)
             is_ahead = len(unique_fork_commits) > 0
