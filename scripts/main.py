@@ -66,86 +66,88 @@ def calculate_months_in_range(start_date, end_date):
 
     return (end.year - start.year) * 12 + (end.month - start.month) + 1
 
+import os
+
 def define_status_determination(stats, months_in_range=1):
     """
     Determine the status of a repository based on its statistics.
     
-    stats (dict): A dictionary containing development activity statistics for a repository
-        
-    str: The determined status of the repository (e.g., "Active", "Dormant", "Archived")
+    stats (dict): Development activity statistics for a repository
+    months_in_range (int): Number of months in the reporting period (default is 1)
+    
+    returns (str): Repo status ("Archived", "Active", "Stable", "Dormant Downstream", "Dormant Upstream", "Dormant")
     """
     criticality_score_threshold = float(os.getenv("CRITICALITY_SCORE_THRESHOLD", 2.5))
-    
-    if stats.get("archived", True):
+
+    # Check if the repo is archived already, defaults to false
+    if stats.get("archived", False):
         return "Archived"
     
-     # Repository has no content (empty or README-only), classify as Dormant
-    if stats.get("is_empty_or_readme_only") in ["Empty", "README-only"]:
+    # Check if the repo is empty or only contains a README file
+    if stats.get("is_empty_or_readme_only") in {"Empty", "README-only"}:
         return "Dormant"
     
-     # Repository shipped releases, classify as Active
-    if stats.get("release_count", 0) > 0:
+    # Boolean for whether repo meets a threshold of importance based on OpenSSF Criticality Score
+    meets_criticality = stats.get("criticality_score", 0) > criticality_score_threshold
+    
+    # Boolean for whether there is active downstream adoption based on the number of active forks (forks with unique commits in the reporting period)
+    downstream_active = stats.get("active_forks_count", 0) > 0
+    
+    # Boolean for whether there are high levels of activity metrics (updates or releases) in the reporting period 
+    high_upstream_activity = (
+        stats.get("commit_count", 0) >= months_in_range
+        or stats.get("pr_merged_count", 0) >= months_in_range
+        or stats.get("issues_closed_count", 0) >= months_in_range
+        or stats.get("release_count", 0) >= months_in_range
+    )
+    
+    # Boolean for whether this is a non-zero level of activity metrics (updates or releases) in the reporting period
+    nonzero_upstream_activity = (
+        stats.get("commit_count", 0) > 0
+        or stats.get("pr_merged_count", 0) > 0
+        or stats.get("issues_closed_count", 0) > 0
+        or stats.get("release_count", 0) > 0
+    )
+    
+    # Boolean for whether there are proposed repo updates or issues representing community engagement 
+    has_community_engagement = (
+        stats.get("pr_open_count", 0) > 0 or stats.get("issues_open_count", 0) > 0
+    )
+    
+    # Further logic for status determination below
+    
+    # ACTIVE: High upstream activity + active downstream adoption + critical project
+    if high_upstream_activity and downstream_active and meets_criticality:
         return "Active"
     
-    activity_fields = [
-        "issues_open_count",
-        "issues_closed_count",
-        "pr_open_count",
-        "pr_merged_count",
-        "pr_closed_count",
-        "commit_count"
-    ]
-
-    meets_threshold = stats.get("criticality_score", 0) > criticality_score_threshold
+    # STABLE: Critical project with high upstream work OR active downstream + some minimal maintainer work
+    if (high_upstream_activity or (downstream_active and nonzero_upstream_activity)) and meets_criticality:
+        return "Stable"
     
-    contents = stats.get("is_empty_or_readme_only")
+    # STABLE: Non-critical project but some level of activity and engagement both upstream and downstream
+    if nonzero_upstream_activity and has_community_engagement and downstream_active:
+        return "Stable"
     
-    if all(stats.get(field, 0) > 0 for field in activity_fields) and meets_threshold and contents == "Has Content":
-        return "Active"
-        
-    if stats.get("issues_open_count", 0) > 0
+    # DORMANT UPSTREAM: Critical project with active downstream forks, but zero maintainer effort upstream
+    if not nonzero_upstream_activity and downstream_active and meets_criticality:
+        return "Dormant Upstream"
     
-    #---------------------------------------------------------------------------------
-    criticality_score_threshold = float(os.getenv("CRITICALITY_SCORE_THRESHOLD", 2.5))
-
-    # Logic for status determination
-    if stats.get("archived", True):
-        return "Archived"
+    # DORMANT DOWNSTREAM: Moderate maintainer effort and community engagement, but no downstream active forks and non-critical
+    if (high_upstream_activity or (nonzero_upstream_activity and has_community_engagement)) and not downstream_active:
+        return "Dormant Downstream"
     
-    # Repository has no content (empty or README-only), classify as Dormant
-    if stats.get("is_empty_or_readme_only") in ["Empty", "README-only"]:
-        return "Dormant"
-    
-    # Repository shipped releases, classify as Active
-    if stats.get("release_count", 0) > 0:
-        return "Active"
-    
-    # Repository shipped >2 user/non-bot commits per month, classify as Active
-    commits_threshold = months_in_range
-    print("COMMIT_COUNT: ", stats.get("commit_count", 0))
-    print("MONTHS_IN_RANGE: ", months_in_range)
-    if stats.get("commit_count", 0) > commits_threshold:
-        return "Active"
-
-    # Repository is low criticality and has low activity across key metrics, classify as Dormant
-    activity_fields = [
-        "issues_open_count",
-        "issues_closed_count",
-        "pr_open_count",
-        "pr_merged_count",
-        "pr_closed_count",
-    ]
-    # Check if all activity fields are below 3, indicating low activity
-    issue_pr_check = all(stats.get(field, 0) < 3 for field in activity_fields)
-
-    # Count how many activity fields have a value of 0, indicating no activity in those areas
-    zero_value_count = sum(1 for field in activity_fields if stats.get(field, 0) == 0)
-    zero_count_check = zero_value_count >= 3
-
-    if stats.get("criticality_score", 0) <= criticality_score_threshold and (issue_pr_check or zero_count_check):
-        return "Dormant"
-    
-    return "Active"
+    # Cases:
+    # low upstream activity + no community engagement + no downstream forks + non-critical 
+        # represents a project with minimal maintainer effor and no other use - should be archived
+    # low upstream activity + no community engagement + no downstream forks + critical
+        # represents a high-importance finished project with minimal further contributions upstream or downstream - should be archived
+    # low upstream activity + no community engagement + downstream forks + non-critical 
+        # represents a project with minimal maintainer effort, and low downstream adoption - should be archived
+    # zero upstream activity + downstream forks + non-critical
+        # represents a project with no maintainer effort, and low downstream adoption - should be archived
+    # zero upstream activty + no downstream forks
+        # represents a stale or complete project update-wise, should be archived regardless of criticality score or community engagement
+    return "Dormant"
 
 def analyze_fork_activity(repo, start_date, end_date):
     """
