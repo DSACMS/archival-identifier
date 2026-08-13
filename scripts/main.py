@@ -116,37 +116,23 @@ def define_status_determination(stats, months_in_range=1):
     
     # Further logic for status determination below
     
-    # ACTIVE: High upstream activity + active downstream adoption + critical project
-    if high_upstream_activity and downstream_active and meets_criticality:
+    # ACTIVE: Critical project which is under active development, has community engagement, and has active downstream forks
+    if high_upstream_activity and downstream_active and has_community_engagement and meets_criticality:
         return "Active"
     
-    # STABLE: Critical project with high upstream work OR active downstream + some minimal maintainer work
-    if (high_upstream_activity or (downstream_active and nonzero_upstream_activity)) and meets_criticality:
-        return "Stable"
-    
-    # STABLE: Non-critical project but some level of activity and engagement both upstream and downstream
-    if nonzero_upstream_activity and has_community_engagement and downstream_active:
+    # STABLE: Active downstream adoption with low-to-moderate upstream updates and either community interest or high criticality
+    if nonzero_upstream_activity and downstream_active and (has_community_engagement or meets_criticality):
         return "Stable"
     
     # DORMANT UPSTREAM: Critical project with active downstream forks, but zero maintainer effort upstream
     if not nonzero_upstream_activity and downstream_active and meets_criticality:
         return "Dormant Upstream"
     
-    # DORMANT DOWNSTREAM: Moderate maintainer effort and community engagement, but no downstream active forks and non-critical
+    # DORMANT DOWNSTREAM: A project which sees maintainer activity, community engagement, and or active development, but lack active downstream adoption, may or may not be critical 
     if (high_upstream_activity or (nonzero_upstream_activity and has_community_engagement)) and not downstream_active:
         return "Dormant Downstream"
     
-    # Cases:
-    # low upstream activity + no community engagement + no downstream forks + non-critical 
-        # represents a project with minimal maintainer effor and no other use - should be archived
-    # low upstream activity + no community engagement + no downstream forks + critical
-        # represents a high-importance finished project with minimal further contributions upstream or downstream - should be archived
-    # low upstream activity + no community engagement + downstream forks + non-critical 
-        # represents a project with minimal maintainer effort, and low downstream adoption - should be archived
-    # zero upstream activity + downstream forks + non-critical
-        # represents a project with no maintainer effort, and low downstream adoption - should be archived
-    # zero upstream activty + no downstream forks
-        # represents a stale or complete project update-wise, should be archived regardless of criticality score or community engagement
+    # DORMANT (Fallback): Catch-all for projects lacking sufficient activity, engagement, or criticality to hit an active classification above.
     return "Dormant"
 
 def analyze_fork_activity(repo, start_date, end_date):
