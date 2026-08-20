@@ -20,10 +20,14 @@
   "repositoryHost": "github.com/DSACMS",
   "repositoryVisibility": "public",
   "homepageURL": "https://github.com/marketplace/actions/archival-identifier",
+  "downloadURL": "",
+  "disclaimerURL": "",
+  "disclaimerText": "",
   "vcs": "git",
-  "laborHours": 14388,
+  "laborHours": 3316,
   "reuseFrequency": {
-    "forks": 4
+    "forks": 4,
+    "clones": 0
   },
   "platforms": [
     "web"
@@ -43,10 +47,13 @@
     "0"
   ],
   "SBOM": "https://github.com/DSACMS/archival-identifier/network/dependencies",
+  "relatedCode": [],
+  "reusedCode": [],
+  "partners": [],
   "date": {
     "created": "2026-01-28T17:57:29Z",
-    "lastModified": "2026-05-15T21:52:52Z",
-    "metadataLastUpdated": "2026-05-15T22:01:35.948Z"
+    "lastModified": "2026-07-21T18:42:34Z",
+    "metadataLastUpdated": "2026-08-01T02:11:55.605Z"
   },
   "tags": [
     "archive",
