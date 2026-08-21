@@ -37,17 +37,49 @@ runs:
 
         # Calculates criticality score for each repo and saves into results variable as JSON
         results='{}'
-        
+        failed_repos=()
+         
         for repo_name in "${repos[@]}"; do
           repo_url="https://github.com/${{ inputs.ORG_NAME }}/${repo_name}"
-          score_obj=$(criticality_score -depsdev-disable -format=json "$repo_url")
-          score=$(echo "$score_obj" | jq '.default_score | tonumber')
-          repo_entry=$(jq -n --arg key "$repo_name" --argjson value "$score" '{($key): $value}')
-          results=$(echo "$results $repo_entry" | jq -s 'add')
+         
+          attempt=1
+          max_attempts=4
+          backoff=60    # seconds, doubles each retry: 60, 120, 240, 480
+          score_obj=""
+          success=false
+         
+          while [ "$attempt" -le "$max_attempts" ]; do
+            # Temporarily disable `set -e` so a nonzero exit doesn't kill the step
+            set +e
+            score_obj=$(criticality_score -depsdev-disable -format=json "$repo_url")
+            status=$?
+            set -e
+         
+            if [ "$status" -eq 0 ] && echo "$score_obj" | jq -e '.default_score' >/dev/null 2>&1; then
+              success=true
+              break
+            fi
+         
+            echo "Attempt $attempt failed for $repo_name (exit $status). Backing off ${backoff}s..."
+            sleep "$backoff"
+            backoff=$((backoff * 2))
+            attempt=$((attempt + 1))
+          done
+         
+          if [ "$success" = true ]; then
+            score=$(echo "$score_obj" | jq '.default_score | tonumber')
+            repo_entry=$(jq -n --arg key "$repo_name" --argjson value "$score" '{($key): $value}')
+            results=$(echo "$results $repo_entry" | jq -s 'add')
+          else
+            echo "Giving up on $repo_name after $max_attempts attempts."
+            failed_repos+=("$repo_name")
+          fi
+         
+          # Base pause between repos
+          echo "Pausing 3 seconds before next repo..."
+          sleep 3
         done
-        echo "$results"
-
-        # Output and saves results into criticality-score-results.json
+         
         echo "$results" > criticality-score-results.json
         echo "Criticality scores: $results"
       env:
