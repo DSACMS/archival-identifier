@@ -3,7 +3,7 @@ import sys
 import subprocess
 import os
 from datetime import datetime
-from github import Github
+from github import Github, GitHubException
 
 def generate_markdown_table(stats_list, org_name, start_date, end_date):
     """
@@ -159,9 +159,15 @@ def analyze_fork_activity(repo, start_date, end_date):
     forks_count = len(forks)
     print( f"{repo} has {forks_count} forks.")
     active_forks = []
-    
-    parent_commits = repo_obj.get_commits(since=start_date, until=end_date) # TODO: Use commits data from data.json
-    parent_commit_shas = { commit.sha for commit in parent_commits }
+
+    try:
+        parent_commits = repo_obj.get_commits(since=start_date, until=end_date) # TODO: Use commits data from data.json
+        parent_commit_shas = {commit.sha for commit in parent_commits}
+    except GithubException as e:
+        if e.status == 409:
+            print(f"Skipping {repo}: repository is empty, no commits to analyze.")
+            return forks_count, 0
+        raise
 
     for fork in forks:
         print(f"Analyzing fork: {fork.full_name}...")
