@@ -3,7 +3,7 @@ import sys
 import subprocess
 import os
 from datetime import datetime
-from github import Github, GitHubException
+from github import Github, GithubException
 
 def generate_markdown_table(stats_list, org_name, start_date, end_date):
     """
