@@ -24,7 +24,7 @@
   "disclaimerURL": "",
   "disclaimerText": "",
   "vcs": "git",
-  "laborHours": 3316,
+  "laborHours": 3343,
   "reuseFrequency": {
     "forks": 4,
     "clones": 0
@@ -52,8 +52,8 @@
   "partners": [],
   "date": {
     "created": "2026-01-28T17:57:29Z",
-    "lastModified": "2026-07-21T18:42:34Z",
-    "metadataLastUpdated": "2026-08-01T02:11:55.605Z"
+    "lastModified": "2026-08-21T15:24:29Z",
+    "metadataLastUpdated": "2026-09-01T03:03:47.996Z"
   },
   "tags": [
     "archive",
