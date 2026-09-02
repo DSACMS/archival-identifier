@@ -86,19 +86,23 @@ def define_status_determination(stats, months_in_range=1):
     # Check if the repo is empty or only contains a README file
     if stats.get("is_empty_or_readme_only") in {"Empty", "README-only"}:
         return "Dormant"
+
+    # Check if the repo has made a release
+    if stats.get("release_count", 0) > 0:
+        return "Active"
     
     # Boolean for whether repo meets a threshold of importance based on OpenSSF Criticality Score
     meets_criticality = stats.get("criticality_score", 0) > criticality_score_threshold
     
-    # Boolean for whether there is active downstream adoption based on the number of active forks (forks with unique commits in the reporting period)
-    downstream_active = stats.get("active_forks_count", 0) > 0
+    # Boolean for whether there is active downstream adoption based on the number of active forks
+    has_downstream = stats.get("forks_count", 0) > 0
+    downstream_active = has_downstream or stats.get("active_forks_count", 0) > 0
     
     # Boolean for whether there are high levels of activity metrics (updates or releases) in the reporting period 
     high_upstream_activity = (
-        stats.get("commit_count", 0) >= months_in_range
+        stats.get("commit_count", 0) >= months_in_range * 2 # Assuming 2 commits per month is a high level of activity
         or stats.get("pr_merged_count", 0) >= months_in_range
         or stats.get("issues_closed_count", 0) >= months_in_range
-        or stats.get("release_count", 0) >= months_in_range
     )
     
     # Boolean for whether this is a non-zero level of activity metrics (updates or releases) in the reporting period
@@ -106,7 +110,7 @@ def define_status_determination(stats, months_in_range=1):
         stats.get("commit_count", 0) > 0
         or stats.get("pr_merged_count", 0) > 0
         or stats.get("issues_closed_count", 0) > 0
-        or stats.get("release_count", 0) > 0
+        or stats.get("pr_closed_count", 0) > 0
     )
     
     # Boolean for whether there are proposed repo updates or issues representing community engagement 
@@ -114,11 +118,11 @@ def define_status_determination(stats, months_in_range=1):
         stats.get("pr_open_count", 0) > 0 or stats.get("issues_open_count", 0) > 0
     )
     
-    # Further logic for status determination below
-    
-    # ACTIVE: Critical project which is under active development, has community engagement, and has active downstream forks
-    if high_upstream_activity and downstream_active and has_community_engagement and meets_criticality:
-        return "Active"
+    # ACTIVE: Critical project which is under active development
+    if high_upstream_activity and meets_criticality:
+        # Assess downstream adoption and community engagement to determine if the project is active
+        if downstream_active or (has_downstream and has_community_engagement):
+            return "Active"
     
     # STABLE: Active downstream adoption with low-to-moderate upstream updates and either community interest or high criticality
     if nonzero_upstream_activity and downstream_active and (has_community_engagement or meets_criticality):
