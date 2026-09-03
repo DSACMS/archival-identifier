@@ -90,6 +90,8 @@ def define_status_determination(stats, months_in_range=1):
     # Check if the repo has made a release
     if stats.get("release_count", 0) > 0:
         return "Active"
+
+    is_fork = stats.get("is_fork", False)
     
     # Boolean for whether repo meets a threshold of importance based on OpenSSF Criticality Score
     meets_criticality = stats.get("criticality_score", 0) > criticality_score_threshold
@@ -129,8 +131,11 @@ def define_status_determination(stats, months_in_range=1):
         return "Stable"
     
     # DORMANT UPSTREAM: Critical project with active downstream forks, but zero maintainer effort upstream
-    if not nonzero_upstream_activity and downstream_active and meets_criticality:
+    if is_fork:
         return "Dormant Upstream"
+
+    # if not nonzero_upstream_activity and downstream_active and meets_criticality:
+    #     return "Dormant Upstream"
     
     # DORMANT DOWNSTREAM: A project which sees maintainer activity, community engagement, and or active development, but lack active downstream adoption, may or may not be critical 
     if (high_upstream_activity or (nonzero_upstream_activity and has_community_engagement)) and not downstream_active:
@@ -160,6 +165,7 @@ def analyze_fork_activity(repo, start_date, end_date):
     end_date = datetime.strptime(end_date, "%Y-%m-%d")
 
     repo_obj = g.get_repo(f"{org_name}/{repo}")
+    is_fork = repo_obj.fork
     forks = list(repo_obj.get_forks())
     forks_count = len(forks)
     print( f"{repo} has {forks_count} forks.")
@@ -199,7 +205,7 @@ def analyze_fork_activity(repo, start_date, end_date):
                 print(f"\nCould not compare {fork.full_name}: {e}")
         
     print(f"{len(active_forks)} active forks found for {repo}.")
-    return forks_count, len(active_forks)
+    return is_fork, forks_count, len(active_forks)
 
 
 def main():
@@ -248,7 +254,8 @@ def main():
 
         # Analyze fork activity
         print(f"Analyzing {repo['name']}: Usage via Forks")
-        forks_count, active_forks_count = analyze_fork_activity(repo["name"], start_date, end_date)
+        repo_is_fork, forks_count, active_forks_count = analyze_fork_activity(repo["name"], start_date, end_date)
+        stats[repo["name"]]["is_fork"] = repo_is_fork
         stats[repo["name"]]["forks_count"] = forks_count
         stats[repo["name"]]["active_forks_count"] = active_forks_count
 
