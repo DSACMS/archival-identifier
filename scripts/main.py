@@ -3,7 +3,7 @@ import sys
 import subprocess
 import os
 from datetime import datetime
-from github import Github
+from github import Github, Auth, GithubException
 
 def generate_markdown_table(stats_list, org_name, start_date, end_date):
     """
@@ -66,54 +66,83 @@ def calculate_months_in_range(start_date, end_date):
 
     return (end.year - start.year) * 12 + (end.month - start.month) + 1
 
+import os
+
 def define_status_determination(stats, months_in_range=1):
     """
     Determine the status of a repository based on its statistics.
     
-    stats (dict): A dictionary containing development activity statistics for a repository
-        
-    str: The determined status of the repository (e.g., "Active", "Dormant", "Archived")
+    stats (dict): Development activity statistics for a repository
+    months_in_range (int): Number of months in the reporting period (default is 1)
+    
+    returns (str): Repo status ("Archived", "Active", "Stable", "Dormant Downstream", "Dormant Upstream", "Dormant")
     """
     criticality_score_threshold = float(os.getenv("CRITICALITY_SCORE_THRESHOLD", 2.5))
 
-    # Logic for status determination
-    if stats.get("archived", True):
+    # Check if the repo is archived already, defaults to false
+    if stats.get("archived", False):
         return "Archived"
     
-    # Repository has no content (empty or README-only), classify as Dormant
-    if stats.get("is_empty_or_readme_only") in ["Empty", "README-only"]:
+    # Check if the repo is empty or only contains a README file
+    if stats.get("is_empty_or_readme_only") in {"Empty", "README-only"}:
         return "Dormant"
-    
-    # Repository shipped releases, classify as Active
+
+    # Check if the repo has made a release
     if stats.get("release_count", 0) > 0:
         return "Active"
+
+    is_fork = stats.get("is_fork", False)
     
-    # Repository shipped >2 user/non-bot commits per month, classify as Active
-    commits_threshold = months_in_range
-    print("COMMIT_COUNT: ", stats.get("commit_count", 0))
-    print("MONTHS_IN_RANGE: ", months_in_range)
-    if stats.get("commit_count", 0) > commits_threshold:
-        return "Active"
-
-    # Repository is low criticality and has low activity across key metrics, classify as Dormant
-    activity_fields = [
-        "issues_open_count",
-        "issues_closed_count",
-        "pr_open_count",
-        "pr_merged_count",
-        "pr_closed_count",
-    ]
-    # Check if all activity fields are below 3, indicating low activity
-    issue_pr_check = all(stats.get(field, 0) < 3 for field in activity_fields)
-
-    # Count how many activity fields have a value of 0, indicating no activity in those areas
-    zero_value_count = sum(1 for field in activity_fields if stats.get(field, 0) == 0)
-    zero_count_check = zero_value_count >= 3
-
-    if stats.get("criticality_score", 0) <= criticality_score_threshold and (issue_pr_check or zero_count_check):
-        return "Dormant"
+    # Boolean for whether repo meets a threshold of importance based on OpenSSF Criticality Score
+    meets_criticality = stats.get("criticality_score", 0) > criticality_score_threshold
     
-    return "Active"
+    # Boolean for whether there is active downstream adoption based on the number of active forks
+    has_downstream = stats.get("forks_count", 0) > 0
+    downstream_active = has_downstream or stats.get("active_forks_count", 0) > 0
+    
+    # Boolean for whether there are high levels of activity metrics (updates or releases) in the reporting period 
+    high_upstream_activity = (
+        stats.get("commit_count", 0) >= months_in_range * 2 # Assuming 2 commits per month is a high level of activity
+        or stats.get("pr_merged_count", 0) >= months_in_range
+        or stats.get("issues_closed_count", 0) >= months_in_range
+    )
+    
+    # Boolean for whether this is a non-zero level of activity metrics (updates or releases) in the reporting period
+    nonzero_upstream_activity = (
+        stats.get("commit_count", 0) > 0
+        or stats.get("pr_merged_count", 0) > 0
+        or stats.get("issues_closed_count", 0) > 0
+        or stats.get("pr_closed_count", 0) > 0
+    )
+    
+    # Boolean for whether there are proposed repo updates or issues representing community engagement 
+    has_community_engagement = (
+        stats.get("pr_open_count", 0) > 0 or stats.get("issues_open_count", 0) > 0
+    )
+    
+    # ACTIVE: Critical project which is under active development
+    if high_upstream_activity and meets_criticality:
+        # Assess downstream adoption and community engagement to determine if the project is active
+        if downstream_active or (has_downstream and has_community_engagement):
+            return "Active"
+    
+    # STABLE: Active downstream adoption with low-to-moderate upstream updates and either community interest or high criticality
+    if nonzero_upstream_activity and downstream_active and (has_community_engagement or meets_criticality):
+        return "Stable"
+    
+    # DORMANT UPSTREAM: Critical project with active downstream forks, but zero maintainer effort upstream
+    if is_fork and not nonzero_upstream_activity:
+        return "Dormant Upstream"
+
+    # if not nonzero_upstream_activity and downstream_active and meets_criticality:
+    #     return "Dormant Upstream"
+    
+    # DORMANT DOWNSTREAM: A project which sees maintainer activity, community engagement, and or active development, but lack active downstream adoption, may or may not be critical 
+    if (high_upstream_activity or (nonzero_upstream_activity and has_community_engagement)) and not downstream_active:
+        return "Dormant Downstream"
+    
+    # DORMANT (Fallback): Catch-all for projects lacking sufficient activity, engagement, or criticality to hit an active classification above.
+    return "Dormant"
 
 def analyze_fork_activity(repo, start_date, end_date):
     """
@@ -126,8 +155,11 @@ def analyze_fork_activity(repo, start_date, end_date):
     dict: A dictionary containing statistics about the forks (e.g., number of forks, recent activity)
     """
 
-    g = Github(os.getenv("GITHUB_AUTH_TOKEN"))
+    token = os.getenv("GITHUB_AUTH_TOKEN")    
     org_name = os.getenv("ORG_NAME")
+
+    auth = Auth.Token(token)
+    g = Github(auth=auth)
     
     start_date = datetime.strptime(start_date, "%Y-%m-%d")
     end_date = datetime.strptime(end_date, "%Y-%m-%d")
@@ -138,18 +170,25 @@ def analyze_fork_activity(repo, start_date, end_date):
     print( f"{repo} has {forks_count} forks.")
     active_forks = []
 
+    try:
+        is_fork = repo_obj.fork
+        parent_commits = repo_obj.get_commits(since=start_date, until=end_date) # TODO: Use commits data from data.json
+        parent_commit_shas = {commit.sha for commit in parent_commits}
+    except GithubException as e:
+        if e.status == 409:
+            print(f"Skipping {repo}: repository is empty, no commits to analyze.")
+            return False, forks_count, 0
+        raise
+
     for fork in forks:
         print(f"Analyzing fork: {fork.full_name}...")
         
         # Check if fork is ahead by unique commits within reporting period
         try:
-            
+
             # Retrieves commits from the reporting period
             fork_commits = fork.get_commits(since=start_date, until=end_date)
             fork_commit_shas = { commit.sha for commit in fork_commits }
-            parent_commits = repo_obj.get_commits(since=start_date, until=end_date) # TODO: Use commits data from data.json
-            parent_commit_shas = { commit.sha for commit in parent_commits }
-
             # Uses the set difference to determine if there are unique commits in the fork that are not in the parent repository
             unique_fork_commits = fork_commit_shas.difference(parent_commit_shas)
             is_ahead = len(unique_fork_commits) > 0
@@ -166,7 +205,7 @@ def analyze_fork_activity(repo, start_date, end_date):
                 print(f"\nCould not compare {fork.full_name}: {e}")
         
     print(f"{len(active_forks)} active forks found for {repo}.")
-    return forks_count, len(active_forks)
+    return is_fork, forks_count, len(active_forks)
 
 
 def main():
@@ -215,7 +254,8 @@ def main():
 
         # Analyze fork activity
         print(f"Analyzing {repo['name']}: Usage via Forks")
-        forks_count, active_forks_count = analyze_fork_activity(repo["name"], start_date, end_date)
+        repo_is_fork, forks_count, active_forks_count = analyze_fork_activity(repo["name"], start_date, end_date)
+        stats[repo["name"]]["is_fork"] = repo_is_fork
         stats[repo["name"]]["forks_count"] = forks_count
         stats[repo["name"]]["active_forks_count"] = active_forks_count
 
