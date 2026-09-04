@@ -131,7 +131,7 @@ def define_status_determination(stats, months_in_range=1):
         return "Stable"
     
     # DORMANT UPSTREAM: Critical project with active downstream forks, but zero maintainer effort upstream
-    if is_fork:
+    if is_fork and not nonzero_upstream_activity:
         return "Dormant Upstream"
 
     # if not nonzero_upstream_activity and downstream_active and meets_criticality:
@@ -185,7 +185,7 @@ def analyze_fork_activity(repo, start_date, end_date):
         
         # Check if fork is ahead by unique commits within reporting period
         try:
-            
+
             # Retrieves commits from the reporting period
             fork_commits = fork.get_commits(since=start_date, until=end_date)
             fork_commit_shas = { commit.sha for commit in fork_commits }
