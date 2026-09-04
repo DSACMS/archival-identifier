@@ -165,19 +165,19 @@ def analyze_fork_activity(repo, start_date, end_date):
     end_date = datetime.strptime(end_date, "%Y-%m-%d")
 
     repo_obj = g.get_repo(f"{org_name}/{repo}")
-    is_fork = repo_obj.fork
     forks = list(repo_obj.get_forks())
     forks_count = len(forks)
     print( f"{repo} has {forks_count} forks.")
     active_forks = []
 
     try:
+        is_fork = repo_obj.fork
         parent_commits = repo_obj.get_commits(since=start_date, until=end_date) # TODO: Use commits data from data.json
         parent_commit_shas = {commit.sha for commit in parent_commits}
     except GithubException as e:
         if e.status == 409:
             print(f"Skipping {repo}: repository is empty, no commits to analyze.")
-            return forks_count, 0
+            return False, forks_count, 0
         raise
 
     for fork in forks:
