@@ -119,6 +119,14 @@ def define_status_determination(stats, months_in_range=1):
     has_community_engagement = (
         stats.get("pr_open_count", 0) > 0 or stats.get("issues_open_count", 0) > 0
     )
+
+    print("name:", stats.get("name"))
+    print("high_upstream_activity:", high_upstream_activity)
+    print("meets_criticality:", meets_criticality)
+    print("downstream_active:", downstream_active)
+    print("has_downstream:", has_downstream)
+    print("nonzero_upstream_activity:", nonzero_upstream_activity)
+    print("has_community_engagement:", has_community_engagement)
     
     # ACTIVE: Critical project which is under active development
     if high_upstream_activity and meets_criticality:
@@ -133,9 +141,6 @@ def define_status_determination(stats, months_in_range=1):
     # DORMANT UPSTREAM: Critical project with active downstream forks, but zero maintainer effort upstream
     if is_fork and not nonzero_upstream_activity:
         return "Dormant Upstream"
-
-    # if not nonzero_upstream_activity and downstream_active and meets_criticality:
-    #     return "Dormant Upstream"
     
     # DORMANT DOWNSTREAM: A project which sees maintainer activity, community engagement, and or active development, but lack active downstream adoption, may or may not be critical 
     if (high_upstream_activity or (nonzero_upstream_activity and has_community_engagement)) and not downstream_active:
