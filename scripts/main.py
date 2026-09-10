@@ -98,7 +98,7 @@ def define_status_determination(stats, months_in_range=1):
     
     # Boolean for whether there is active downstream adoption based on the number of active forks
     has_downstream = stats.get("forks_count", 0) > 0
-    downstream_active = has_downstream or stats.get("active_forks_count", 0) > 0
+    downstream_active = stats.get("active_forks_count", 0) > 0
     
     # Boolean for whether there are high levels of activity metrics (updates or releases) in the reporting period 
     high_upstream_activity = (
@@ -135,7 +135,7 @@ def define_status_determination(stats, months_in_range=1):
             return "Active"
     
     # STABLE: Active downstream adoption with low-to-moderate upstream updates and either community interest or high criticality
-    if nonzero_upstream_activity and downstream_active and (has_community_engagement or meets_criticality):
+    if nonzero_upstream_activity and has_downstream and (has_community_engagement or meets_criticality or downstream_active):
         return "Stable"
     
     # DORMANT UPSTREAM: Critical project with active downstream forks, but zero maintainer effort upstream
@@ -143,7 +143,7 @@ def define_status_determination(stats, months_in_range=1):
         return "Dormant Upstream"
     
     # DORMANT DOWNSTREAM: A project which sees maintainer activity, community engagement, and or active development, but lack active downstream adoption, may or may not be critical 
-    if (high_upstream_activity or (nonzero_upstream_activity and has_community_engagement)) and not downstream_active:
+    if (high_upstream_activity or (nonzero_upstream_activity and has_community_engagement)) and has_downstream and not downstream_active:
         return "Dormant Downstream"
     
     # DORMANT (Fallback): Catch-all for projects lacking sufficient activity, engagement, or criticality to hit an active classification above.
