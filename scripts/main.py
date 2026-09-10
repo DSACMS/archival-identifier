@@ -128,19 +128,20 @@ def define_status_determination(stats, months_in_range=1):
     print("nonzero_upstream_activity:", nonzero_upstream_activity)
     print("has_community_engagement:", has_community_engagement)
     
-    # ACTIVE: Critical project which is under active development
-    if high_upstream_activity and meets_criticality:
-        # Assess downstream adoption and community engagement to determine if the project is active
-        if downstream_active or (has_downstream and has_community_engagement):
-            return "Active"
+    # ACTIVE: Critical project which is under active development, with downstream adoption and community engagement.
+    if high_upstream_activity and meets_criticality and has_downstream and (downstream_active or has_community_engagement):
+        return "Active"
     
     # STABLE: Active downstream adoption with low-to-moderate upstream updates and either community interest or high criticality
     if nonzero_upstream_activity and (has_community_engagement or meets_criticality or has_downstream):
         return "Stable"
     
     # DORMANT UPSTREAM: Critical project with active downstream forks, but zero maintainer effort upstream
-    if is_fork and not nonzero_upstream_activity:
-        return "Dormant Upstream"
+    if is_fork:
+        if (not nonzero_upstream_activity or stats.get("commit_count", 0) < 2):
+            return "Dormant Upstream"
+        else:
+            return "Active"
     
     # DORMANT DOWNSTREAM: A project which sees maintainer activity, community engagement, and or active development, but lack active downstream adoption, may or may not be critical 
     # if (high_upstream_activity or (nonzero_upstream_activity and has_community_engagement)) and has_downstream and not downstream_active:
