@@ -102,22 +102,23 @@ def define_status_determination(stats, months_in_range=1):
     
     # Boolean for whether there are high levels of activity metrics (updates or releases) in the reporting period 
     high_upstream_activity = (
-        stats.get("commit_count", 0) >= months_in_range * 2 # Assuming 2 commits per month is a high level of activity
-        or stats.get("pr_merged_count", 0) >= months_in_range
-        or stats.get("issues_closed_count", 0) >= months_in_range
+        (stats.get("commit_count", 0) >= (months_in_range * 2)) # Assuming 2 commits per month is a high level of activity
+        or (stats.get("pr_merged_count", 0) >= months_in_range)
+        or (stats.get("issues_closed_count", 0) >= months_in_range)
+        or (stats.get("pr_closed_count", 0) >= months_in_range)
     )
     
     # Boolean for whether this is a non-zero level of activity metrics (updates or releases) in the reporting period
     nonzero_upstream_activity = (
-        stats.get("commit_count", 0) > 0
-        or stats.get("pr_merged_count", 0) > 0
-        or stats.get("issues_closed_count", 0) > 0
-        or stats.get("pr_closed_count", 0) > 0
+        (stats.get("commit_count", 0) > 0)
+        or (stats.get("pr_merged_count", 0) > 0)
+        or (stats.get("issues_closed_count", 0) > 0)
+        or (stats.get("pr_closed_count", 0) > 0)
     )
     
     # Boolean for whether there are proposed repo updates or issues representing community engagement 
     has_community_engagement = (
-        stats.get("pr_open_count", 0) > 0 or stats.get("issues_open_count", 0) > 0
+        (stats.get("pr_open_count", 0) > 0) or (stats.get("issues_open_count", 0) > 0)
     )
 
     print("name:", stats.get("name"))
