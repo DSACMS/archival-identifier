@@ -66,8 +66,6 @@ def calculate_months_in_range(start_date, end_date):
 
     return (end.year - start.year) * 12 + (end.month - start.month) + 1
 
-import os
-
 def define_status_determination(stats, months_in_range=1):
     """
     Determine the status of a repository based on its statistics.
@@ -77,7 +75,7 @@ def define_status_determination(stats, months_in_range=1):
     
     returns (str): Repo status ("Archived", "Active", "Stable", "Dormant Downstream", "Dormant Upstream", "Dormant")
     """
-    criticality_score_threshold = float(os.getenv("CRITICALITY_SCORE_THRESHOLD", 2.5))
+    criticality_score_threshold = float(os.getenv("CRITICALITY_SCORE_THRESHOLD", 0.25))
 
     # Check if the repo is archived already, defaults to false
     if stats.get("archived", False):
