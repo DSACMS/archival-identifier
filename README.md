@@ -129,7 +129,11 @@ The action uses the empty-repos GitHub Action to scan for repositories that are 
 
 #### Token
 
-A `GITHUB_TOKEN` is needed for this action for writing issues and reading contents + pull requests. The built-in GITHUB_TOKEN provided by the workflow is sufficient to run the action! Set it as the permissions below:
+A `GITHUB_TOKEN` is needed for this action for writing issues and reading contents + pull requests.  Depending on the number of repositories to be scanned in your organization as well as the time period, you will need a specific type of token:
+
+##### `GITHUB_TOKEN` in Workflow
+
+The built-in GITHUB_TOKEN provided by the workflow alone may be sufficient to run the action. Set it as the permissions below:
 
 ```
 permissions:
@@ -137,9 +141,20 @@ permissions:
   pull-requests: read
   issues: write
 ```
+
+##### Personal Access Token (PAT)
+For running the action on an organization with numerous repositories or scanning across a long time period, a Personal Access Token works best. Create a PAT with the following permissions below. Add this as a repository secret and set the secret as the `GITHUB_ORG_TOKEN`:
+
+- Read access to code, metadata, and pull requests
+- Read and Write access to issues
+
+```
+GITHUB_ORG_TOKEN: ${{ secrets.PAT }}
+```
+
+
 ⚠️ Please make sure the following are enabled within your Repository Action Settings in order to work properly ⚠️
 ![GitHub Workflow Permissions Setting](./assets/workflow_permissions_setting.png)
-
 
 ### Outputs
 
